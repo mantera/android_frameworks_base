@@ -125,6 +125,12 @@ public abstract class ServiceStateTracker extends Handler {
     protected static final int EVENT_OTA_PROVISION_STATUS_CHANGE       = 37;
     protected static final int EVENT_SET_RADIO_POWER_OFF               = 38;
 
+/*
+ * KD 1/29 - Add event flags for CDMA subscription and PRL
+ */
+    protected static final int EVENT_CDMA_SUBSCRIPTION_SOURCE_CHANGED  = 40;
+    protected static final int EVENT_CDMA_PRL_VERSION_CHANGED          = 41;
+    protected static final int EVENT_POLL_STATE_PRL_VERSION_CHANGED    = 42;
     protected static final String TIMEZONE_PROPERTY = "persist.sys.timezone";
 
     /**
