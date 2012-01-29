@@ -16,9 +16,6 @@
 # Used by Android.mk and keyboards.mk.
 
 keylayouts := \
-    Generic.kl \
-    AVRCP.kl \
-    qwerty.kl \
     Vendor_045e_Product_028e.kl \
     Vendor_046d_Product_c216.kl \
     Vendor_046d_Product_c294.kl \
