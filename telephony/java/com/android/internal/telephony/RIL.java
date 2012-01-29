@@ -2053,7 +2053,14 @@ public class RIL extends BaseCommands implements CommandsInterface {
         switch(stateInt) {
             case 0: state = RadioState.RADIO_OFF; break;
             case 1: state = RadioState.RADIO_UNAVAILABLE; break;
-            case 2: state = RadioState.SIM_NOT_READY; break;
+            case 2: 
+                String sRILClassname = SystemProperties.get("ro.telephony.ril_class");
+                if ("Triumph".equals(sRILClassname)) {
+            		state = RadioState.NV_READY;
+		        } else {
+			    state = RadioState.SIM_NOT_READY;
+		        }
+                break;
             case 3: state = RadioState.SIM_LOCKED_OR_ABSENT; break;
             case 4: state = RadioState.SIM_READY; break;
             case 5: state = RadioState.RUIM_NOT_READY; break;
@@ -2319,6 +2326,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_REQUEST_ISIM_AUTHENTICATION: ret =  responseString(p); break;
             case RIL_REQUEST_ACKNOWLEDGE_INCOMING_GSM_SMS_WITH_PDU: ret = responseVoid(p); break;
             case RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS: ret = responseICC_IO(p); break;
+            case RIL_REQUEST_CDMA_PRL_VERSION: ret = responseString(p); break; // RIL_REQUEST_CDMA_PRL_VERSION
+            
             default:
                 throw new RuntimeException("Unrecognized solicited response: " + rr.mRequest);
             //break;
@@ -2464,8 +2473,10 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_UNSOL_RINGBACK_TONE: ret = responseInts(p); break;
             case RIL_UNSOL_RESEND_INCALL_MUTE: ret = responseVoid(p); break;
             case RIL_UNSOL_CDMA_SUBSCRIPTION_SOURCE_CHANGED: ret = responseInts(p); break;
-            case RIL_UNSOl_CDMA_PRL_CHANGED: ret = responseInts(p); break;
+            case RIL_UNSOl_CDMA_PRL_CHANGED: ret = responseVoid(p); break;
+            case RIL_UNSOL_CDMA_PRL_CHANGED2: ret = responseVoid(p); break;
             case RIL_UNSOL_EXIT_EMERGENCY_CALLBACK_MODE: ret = responseVoid(p); break;
+            case RIL_UNSOL_EXIT_VOICE_RADIO_TECH_CHANGE: ret = responseVoid(p); break;
             case RIL_UNSOL_RIL_CONNECTED: ret = responseInts(p); break;
 
             default:
@@ -2792,7 +2803,11 @@ public class RIL extends BaseCommands implements CommandsInterface {
                                         new AsyncResult (null, ret, null));
                 }
                 break;
-
+            
+            case RIL_UNSOL_CDMA_PRL_CHANGED2:
+                riljLogv("UNSOL PRL Change Upcall");
+                break;
+                
             case RIL_UNSOL_EXIT_EMERGENCY_CALLBACK_MODE:
                 if (RILJ_LOGD) unsljLogRet(response, ret);
 
@@ -3556,6 +3571,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_REQUEST_ISIM_AUTHENTICATION: return "RIL_REQUEST_ISIM_AUTHENTICATION";
             case RIL_REQUEST_ACKNOWLEDGE_INCOMING_GSM_SMS_WITH_PDU: return "RIL_REQUEST_ACKNOWLEDGE_INCOMING_GSM_SMS_WITH_PDU";
             case RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS: return "RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS";
+            case RIL_REQUEST_CDMA_PRL_VERSION: return "RIL_REQUEST_CDMA_PRL_VERSION";
             default: return "<unknown request>";
         }
     }
@@ -3650,6 +3666,13 @@ public class RIL extends BaseCommands implements CommandsInterface {
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
         send(rr);
+    }
+    
+    public void
+    getCDMAPrlVersion(Message response) {
+        RILRequest rr = RILRequest.obtain(RIL_REQUEST_CDMA_PRL_VERSION, response);	
+        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
+        send(rr);	
     }
 
     @Override
