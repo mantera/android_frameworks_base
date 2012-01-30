@@ -2476,7 +2476,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_UNSOl_CDMA_PRL_CHANGED: ret = responseVoid(p); break;
             case RIL_UNSOL_CDMA_PRL_CHANGED2: ret = responseVoid(p); break;
             case RIL_UNSOL_EXIT_EMERGENCY_CALLBACK_MODE: ret = responseVoid(p); break;
-            case RIL_UNSOL_EXIT_VOICE_RADIO_TECH_CHANGE: ret = responseVoid(p); break;
+         //   case RIL_UNSOL_EXIT_VOICE_RADIO_TECH_CHANGE: ret = responseVoid(p); break;
             case RIL_UNSOL_RIL_CONNECTED: ret = responseInts(p); break;
 
             default:
