@@ -321,7 +321,7 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
             ar = (AsyncResult) msg.obj;
 
             if (ar.exception == null) {
-                String PrlNumber = (String)ar.result;
+                String PrlNumber = ((String [])ar.result)[4];
 	    	Log.w(LOG_TAG, "PRL: " + PrlNumber);
 // KD 10-23 
 // If the returned PRL is valid, use it.  Otherwise use the sysprop version
