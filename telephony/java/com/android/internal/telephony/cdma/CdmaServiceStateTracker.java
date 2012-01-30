@@ -144,7 +144,8 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
 
     private ContentResolver cr;
     private String currentCarrier = null;
-
+    private boolean mIsSamsungCdma = SystemProperties.getBoolean("ro.ril.samsung_cdma", false);
+    
     private ContentObserver mAutoTimeObserver = new ContentObserver(new Handler()) {
         @Override
         public void onChange(boolean selfChange) {
