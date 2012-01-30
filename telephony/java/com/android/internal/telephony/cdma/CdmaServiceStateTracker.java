@@ -300,6 +300,41 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
             pollState();
             break;
 
+
+/*
+ * KD 8/28 - Handle CDMA Subscription Source Notification
+ */
+        case EVENT_CDMA_SUBSCRIPTION_SOURCE_CHANGED:
+            Log.w(LOG_TAG, "CDMA Subscription Source Upcall request");
+            cm.getCDMASubscription( obtainMessage(EVENT_POLL_STATE_CDMA_SUBSCRIPTION));    
+            break;
+/*
+ * KD 10/23 - Pull the PRL version if it has changed
+ */
+        case EVENT_CDMA_PRL_VERSION_CHANGED:
+            Log.w(LOG_TAG, "PRL Version Upcall request");
+            cm.getCDMAPrlVersion(obtainMessage(EVENT_POLL_STATE_PRL_VERSION_CHANGED));	
+            break;
+
+        case EVENT_POLL_STATE_PRL_VERSION_CHANGED:
+            ar = (AsyncResult) msg.obj;
+
+            if (ar.exception == null) {
+                String PrlNumber = (String)ar.result;
+	    	Log.w(LOG_TAG, "PRL: " + PrlNumber);
+// KD 10-23 
+// If the returned PRL is valid, use it.  Otherwise use the sysprop version
+//
+		if (PrlNumber != null) {
+			mPrlVersion = PrlNumber;
+		}
+	    } else {
+	    	Log.e(LOG_TAG, "PRL grab FAILED - no return string");
+	    }
+	    break;
+// End KD
+
+
         case EVENT_NETWORK_STATE_CHANGED_CDMA:
             pollState();
             break;
@@ -377,14 +412,51 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
 
             if (ar.exception == null) {
                 String cdmaSubscription[] = (String[])ar.result;
-                if (cdmaSubscription != null && cdmaSubscription.length >= 5) {
+                
+/*
+ * KD 8/28 - Add check for Triumph here, and if we find it, set up to run as
+ * the Samsung devices do on this request, since it appears they return
+ * 4 elements instead of five.  We then grab the PRL out of system properties.
+ * Yeah, it's bullshit, but there's debate over what RIL code 106 is, and
+ * I'm uncomfortable coding for it given the divergent definitions.  Isn't
+ * it fun when allegedly-standard APIs are different between implementations?
+ */
+                
+                 // Samsung CDMA devices have shorter cdmaSubscription parcel
+                String sRILClassname = SystemProperties.get("ro.telephony.ril_class");
+    	        int SUB_LENGTH = 5;
+            	if ("Triumph".equals(sRILClassname)) {
+		        	SUB_LENGTH = 4;
+        		} else {
+	                        SUB_LENGTH = (mIsSamsungCdma) ? 4 : 5;	
+		        }
+		        Log.e(LOG_TAG, "cdmaSubscription0: " + cdmaSubscription[0]);
+		        Log.e(LOG_TAG, "cdmaSubscription1: " + cdmaSubscription[1]);
+		        Log.e(LOG_TAG, "cdmaSubscription2: " + cdmaSubscription[2]);
+		        Log.e(LOG_TAG, "cdmaSubscription3: " + cdmaSubscription[3]);
+                
+                if (cdmaSubscription != null && cdmaSubscription.length >= SUB_LENGTH) {
                     mMdn = cdmaSubscription[0];
                     parseSidNid(cdmaSubscription[1], cdmaSubscription[2]);
 
                     mMin = cdmaSubscription[3];
-                    mPrlVersion = cdmaSubscription[4];
+                    
+/*
+ * KD - again, check the triumph code and act as if Samsung
+ */
+                    if ("Triumph".equals(sRILClassname)) {
+	    		        mPrlVersion = SystemProperties.get("ro.telephony.ril_prl");
+	                } else {
+	    	    	    if (mIsSamsungCdma) {
+		    	    	    String[] prl = (SystemProperties.get("ril.prl_ver_1").split(":"));
+			    	        mPrlVersion = prl[1];
+       	     	        } else {
+	                        mPrlVersion = cdmaSubscription[4];
+            	        }
+		            }
+                
                     if (DBG) log("GET_CDMA_SUBSCRIPTION: MDN=" + mMdn);
-
+                    if (DBG) log("GET_CDMA_SUBSCRIPTION: PRL=" + mPrlVersion);
                     mIsMinInfoReady = true;
 
                     updateOtaspState();
@@ -812,6 +884,15 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
 
         case SIM_NOT_READY:
         case SIM_LOCKED_OR_ABSENT:
+/*
+ * KD 8/28 - do not kill the rado if we get a SIM ABSENT on a Triumph - just
+ * ignore the state.  Triumphs don't have SIMs.
+ */
+            log("SIM_LOCKED_OR_ABSENT RECEIVED");
+            String sRILClassname = SystemProperties.get("ro.telephony.ril_class");
+            if ("Triumph".equals(sRILClassname)) {
+       	        break;
+	        }
         case SIM_READY:
             if (DBG) log("Radio Technology Change ongoing, setting SS to off");
             newSS.setStateOff();
@@ -837,6 +918,13 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
             cm.getVoiceRegistrationState(
                     obtainMessage(EVENT_POLL_STATE_REGISTRATION_CDMA, pollingContext));
 
+// KD 10-23 - Issue a request for the PRL but do not require it to come
+// back valid for the radio to come online.  For whatever reason, we don't
+// get this from the Qualcomm code on the Triumph
+//          pollingContext[0]++;
+            // RIL_REQUEST_CDMA_PRL_VERSION for CDMA
+            cm.getCDMAPrlVersion(
+                    obtainMessage(EVENT_CDMA_PRL_VERSION_CHANGED, pollingContext));
             break;
         }
     }
@@ -1092,7 +1180,16 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
         } else {
             int[] ints = (int[])ar.result;
             int offset = 2;
-            int cdmaDbm = (ints[offset] > 0) ? -ints[offset] : -120;
+           
+            // Samsung CDMA devices only use cdmaDbm for signal strength
+            // parcel is different as well, pull cdmaDbm response correctly
+            // all other values are ignored
+            int cdmaDbm;
+            if (mIsSamsungCdma)
+                cdmaDbm = (ints[0] > 0 ) ? -ints[0] : -120;
+            else
+                cdmaDbm = (ints[offset] > 0) ? -ints[offset] : -120;
+                
             int cdmaEcio = (ints[offset+1] > 0) ? -ints[offset+1] : -160;
             int evdoRssi = (ints[offset+2] > 0) ? -ints[offset+2] : -120;
             int evdoEcio = (ints[offset+3] > 0) ? -ints[offset+3] : -1;
