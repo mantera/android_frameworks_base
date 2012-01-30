@@ -301,4 +301,6 @@ cat include/telephony/ril.h | \
     int RIL_UNSOl_CDMA_PRL_CHANGED = 1032;
     int RIL_UNSOL_EXIT_EMERGENCY_CALLBACK_MODE = 1033;
     int RIL_UNSOL_RIL_CONNECTED = 1034;
+    
+    int RIL_UNSOL_CDMA_PRL_CHANGED2 = 1035;
 }
