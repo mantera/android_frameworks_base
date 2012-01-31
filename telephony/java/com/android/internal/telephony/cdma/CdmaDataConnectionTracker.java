@@ -116,6 +116,36 @@ public final class CdmaDataConnectionTracker extends DataConnectionTracker {
         mDataConnectionTracker = this;
 
         createAllDataConnectionList();
+
+
+        // This preference tells us 1) initial condition for "dataEnabled",
+        // and 2) whether the RIL will setup the baseband to auto-PS attach.
+        /*SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(phone.getContext());
+
+        boolean dataEnabledSetting = true;
+        try {
+            dataEnabledSetting = IConnectivityManager.Stub.asInterface(ServiceManager.
+                    getService(Context.CONNECTIVITY_SERVICE)).getMobileDataEnabled();
+        } catch (Exception e) {
+            // nothing to do - use the old behavior and leave data on
+        }
+        dataEnabled[APN_DEFAULT_ID] =
+                !sp.getBoolean(CDMAPhone.DATA_DISABLED_ON_BOOT_KEY, false) &&
+                dataEnabledSetting;
+        if (dataEnabled[APN_DEFAULT_ID]) {
+            enabledCount++;
+        }
+        noAutoAttach = !dataEnabled[APN_DEFAULT_ID];
+
+        if (!mRetryMgr.configure(SystemProperties.get("ro.cdma.data_retry_config"))) {
+            if (!mRetryMgr.configure(DEFAULT_DATA_RETRY_CONFIG)) {
+                // Should never happen, log an error and default to a simple linear sequence.
+                Log.e(LOG_TAG, "Could not configure using DEFAULT_DATA_RETRY_CONFIG="
+                        + DEFAULT_DATA_RETRY_CONFIG);
+                mRetryMgr.configure(20, 2000, 1000);
+            }
+        }*/
+
         broadcastMessenger();
     }
 

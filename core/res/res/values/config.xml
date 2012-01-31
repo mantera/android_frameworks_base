@@ -754,4 +754,6 @@
          legacy USB manager should be started. -->
     <string name="config_legacyUmsLunFile">/sys/devices/platform/usb_mass_storage/lun0/file</string>
 
+      <!-- Set this to true to get data working on some Motorola phones -->
+    <bool name="config_rilNeedsNullPath">false</bool>
 </resources>

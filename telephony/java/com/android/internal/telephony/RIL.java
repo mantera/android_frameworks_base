@@ -24,6 +24,7 @@ import static android.telephony.TelephonyManager.NETWORK_TYPE_UMTS;
 import static android.telephony.TelephonyManager.NETWORK_TYPE_HSDPA;
 import static android.telephony.TelephonyManager.NETWORK_TYPE_HSUPA;
 import static android.telephony.TelephonyManager.NETWORK_TYPE_HSPA;
+//import static android.telephony.TelephonyManager.NETWORK_TYPE_HSPAP;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -199,8 +200,10 @@ class RILRequest {
  */
 public class RIL extends BaseCommands implements CommandsInterface {
     static final String LOG_TAG = "RILJ";
+    static final boolean DBG = false;
     static final boolean RILJ_LOGD = true;
     static final boolean RILJ_LOGV = false; // STOP SHIP if true
+    private boolean rilNeedsNullPath = false;
 
     /**
      * Wake lock timeout should be longer than the longest timeout in
@@ -226,7 +229,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
     // mRequestList.size() unless there are requests no replied while
     // WAKE_LOCK_TIMEOUT occurs.
     int mRequestMessagesWaiting;
-
+    
+    // Is this the first radio state change?
+    protected boolean mInitialRadioStateChange = true;
     //I'd rather this be LinkedList or something
     ArrayList<RILRequest> mRequestsList = new ArrayList<RILRequest>();
 
@@ -610,7 +615,27 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
         mCdmaSubscription  = cdmaSubscription;
         mPreferredNetworkType = preferredNetworkType;
-        mPhoneType = RILConstants.NO_PHONE;
+        rilNeedsNullPath = context.getResources().getBoolean(com.android.internal.R.bool.config_rilNeedsNullPath);
+
+        //At startup mPhoneType is first set from preferredNetworkType
+        switch(preferredNetworkType) {
+            case RILConstants.NETWORK_MODE_WCDMA_PREF:
+            case RILConstants.NETWORK_MODE_GSM_ONLY:
+            case RILConstants.NETWORK_MODE_WCDMA_ONLY:
+            case RILConstants.NETWORK_MODE_GSM_UMTS:
+                mPhoneType = RILConstants.GSM_PHONE;
+                break;
+            case RILConstants.NETWORK_MODE_CDMA:
+            case RILConstants.NETWORK_MODE_CDMA_NO_EVDO:
+            case RILConstants.NETWORK_MODE_EVDO_NO_CDMA:
+                mPhoneType = RILConstants.CDMA_PHONE;
+                break;
+            case RILConstants.NETWORK_MODE_GLOBAL:
+                mPhoneType = RILConstants.CDMA_PHONE;
+                break;
+            default:
+                mPhoneType = RILConstants.CDMA_PHONE;
+        }
 
         PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOG_TAG);
@@ -1375,7 +1400,32 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     public void
     setRadioPower(boolean on, Message result) {
-        RILRequest rr = RILRequest.obtain(RIL_REQUEST_RADIO_POWER, result);
+    //if radio is OFF set preferred NW type and cmda subscription
+        if(mInitialRadioStateChange) {
+            synchronized (mStateMonitor) {
+                if (!mState.isOn()) {
+                    RILRequest rrPnt = RILRequest.obtain(
+                                   RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE, null);
+
+                    rrPnt.mp.writeInt(1);
+                    rrPnt.mp.writeInt(mPreferredNetworkType);
+                    if (RILJ_LOGD) riljLog(rrPnt.serialString() + "> "
+                        + requestToString(rrPnt.mRequest) + " : " + mPreferredNetworkType);
+
+                    send(rrPnt);
+
+                    RILRequest rrCs = RILRequest.obtain(
+                                   RIL_REQUEST_CDMA_SET_SUBSCRIPTION_SOURCE, null);
+                    rrCs.mp.writeInt(1);
+                    rrCs.mp.writeInt(mCdmaSubscription);
+                    if (RILJ_LOGD) riljLog(rrCs.serialString() + "> "
+                    + requestToString(rrCs.mRequest) + " : " + mCdmaSubscription);
+                    send(rrCs);
+                }
+            }
+        }
+
+	RILRequest rr = RILRequest.obtain(RIL_REQUEST_RADIO_POWER, result);
 
         rr.mp.writeInt(1);
         rr.mp.writeInt(on ? 1 : 0);
@@ -1406,11 +1456,11 @@ public class RIL extends BaseCommands implements CommandsInterface {
     acknowledgeLastIncomingGsmSms(boolean success, int cause, Message result) {
         RILRequest rr
                 = RILRequest.obtain(RIL_REQUEST_SMS_ACKNOWLEDGE, result);
-
+        
         rr.mp.writeInt(2);
         rr.mp.writeInt(success ? 1 : 0);
         rr.mp.writeInt(cause);
-
+     
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest)
                 + " " + success + " " + cause);
 
@@ -1457,6 +1507,13 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
         rr.mp.writeInt(command);
         rr.mp.writeInt(fileid);
+
+	 // MB501 (zeppelin) and other phones (motus, morrison, etc) require this
+        // to get data working
+        if (rilNeedsNullPath) {
+            path = null;
+        }
+
         rr.mp.writeString(path);
         rr.mp.writeInt(p1);
         rr.mp.writeInt(p2);
@@ -2054,7 +2111,15 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case 0: state = RadioState.RADIO_OFF; break;
             case 1: state = RadioState.RADIO_UNAVAILABLE; break;
             case 2: 
-                String sRILClassname = SystemProperties.get("ro.telephony.ril_class");
+/* 
+ * KD 8-29 If we have a Motorola Triumph it loves to send up a SIM_NOT_READY
+ * code up despite not having a sim.  It also NEVER sends up a NV_READY 
+ * state and it's supposed to, since there's no RUIM either.  Aren't
+ * standard APIs that manufacturer's violate wonderful?  As a consequence, we 
+ * treat the former as the latter - but only if it's a Triumph.
+ */
+
+		String sRILClassname = SystemProperties.get("ro.telephony.ril_class");
                 if ("Triumph".equals(sRILClassname)) {
             		state = RadioState.NV_READY;
 		        } else {
@@ -2077,7 +2142,24 @@ public class RIL extends BaseCommands implements CommandsInterface {
     }
 
     protected void switchToRadioState(RadioState newState) {
-        setRadioState(newState);
+        if(mInitialRadioStateChange) {
+           if (newState.isOn()) {
+             /* If this is our first notification, make sure the radio
+	      * is powered off. This gets the radio into a known state,
+	      * since it's possible for the phone proc to have restarted
+	      * (eg, if it or the runtime crashed) without the RIl
+	      * and/or radio knowing
+	      */
+	     if (RILJ_LOGD) Log.d(LOG_TAG, "Radio ON @init; reset to OFF");
+	      setRadioPower(false, null);
+          } else { 
+             if (DBG) Log.d(LOG_TAG, "Radio OFF @ init");
+             setRadioState(newState);
+          }
+	  mInitialRadioStateChange = false;
+        } else {
+         setRadioState(newState);
+        }
     }
 
     /**
@@ -2112,8 +2194,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
             }
         }
     }
-
-    protected void
+    
+   protected void
     send(RILRequest rr) {
         Message msg;
 
@@ -2473,11 +2555,11 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_UNSOL_RINGBACK_TONE: ret = responseInts(p); break;
             case RIL_UNSOL_RESEND_INCALL_MUTE: ret = responseVoid(p); break;
             case RIL_UNSOL_CDMA_SUBSCRIPTION_SOURCE_CHANGED: ret = responseInts(p); break;
-            case RIL_UNSOl_CDMA_PRL_CHANGED: ret = responseVoid(p); break;
+            case RIL_UNSOL_CDMA_PRL_CHANGED: ret = responseVoid(p); break;
             case RIL_UNSOL_CDMA_PRL_CHANGED2: ret = responseVoid(p); break;
             case RIL_UNSOL_EXIT_EMERGENCY_CALLBACK_MODE: ret = responseVoid(p); break;
-            case RIL_UNSOL_EXIT_VOICE_RADIO_TECH_CHANGE: ret = responseVoid(p); break;
-            case RIL_UNSOL_RIL_CONNECTED: ret = responseInts(p); break;
+            case RIL_UNSOL_VOICE_RADIO_TECH_CHANGED: ret = responseVoid(p); break;
+            //case RIL_UNSOL_RIL_CONNECTED: ret = responseInts(p); break;
 
             default:
                 throw new RuntimeException("Unrecognized unsol response: " + response);
@@ -2786,23 +2868,28 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 }
                 break;
 
+/*
+ * KD 8/28 - Add new upcall routines for the added CDMA radio states
+ */
+
             case RIL_UNSOL_CDMA_SUBSCRIPTION_SOURCE_CHANGED:
                 if (RILJ_LOGD) unsljLogRet(response, ret);
+		int [] ssource = (int[])ret;
 
                 if (mCdmaSubscriptionChangedRegistrants != null) {
                     mCdmaSubscriptionChangedRegistrants.notifyRegistrants(
-                                        new AsyncResult (null, ret, null));
+                                        new AsyncResult (null, ssource, null));
                 }
                 break;
 
-            case RIL_UNSOl_CDMA_PRL_CHANGED:
-                if (RILJ_LOGD) unsljLogRet(response, ret);
+            case RIL_UNSOL_CDMA_PRL_CHANGED:
+        //      if (RILJ_LOGD) unsljLogRet(response, ret);
 
-                if (mCdmaPrlChangedRegistrants != null) {
-                    mCdmaPrlChangedRegistrants.notifyRegistrants(
-                                        new AsyncResult (null, ret, null));
-                }
-                break;
+        //      if (mCdmaPrlChangedRegistrants != null) {
+        //         mCdmaPrlChangedRegistrants.notifyRegistrants(
+        //                   new AsyncResult (null, ret, null));
+        //      }
+        //      break;
             
             case RIL_UNSOL_CDMA_PRL_CHANGED2:
                 riljLogv("UNSOL PRL Change Upcall");
@@ -2817,18 +2904,20 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 }
                 break;
 
-            case RIL_UNSOL_RIL_CONNECTED: {
-                if (RILJ_LOGD) unsljLogRet(response, ret);
+          //   case RIL_UNSOL_RIL_CONNECTED: { 
+             //  case RIL_UNSOL_VOICE_RADIO_TECH_CHANGED: {
+            //    if (RILJ_LOGD) unsljLogRet(response, ret);
 
                 // Initial conditions
-                setRadioPower(false, null);
-                setPreferredNetworkType(mPreferredNetworkType, null);
-                setCdmaSubscriptionSource(mCdmaSubscription, null);
-                notifyRegistrantsRilConnectionChanged(((int[])ret)[0]);
-                break;
-            }
+               // setRadioPower(false, null);
+               // setPreferredNetworkType(mPreferredNetworkType, null);
+               // setCdmaSubscriptionSource(mCdmaSubscription, null);
+             //   notifyRegistrantsRilConnectionChanged(((int[])ret)[0]);
+             //  break;
+           // }
         }
     }
+ 
 
     /**
      * Notifiy all registrants that the ril has connected or disconnected.
@@ -3249,7 +3338,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
            radioType = NETWORK_TYPE_HSUPA;
        } else if (radioString.equals("HSPA")) {
            radioType = NETWORK_TYPE_HSPA;
-       } else {
+       } //else if (radioString.equals("HSPA+")) {
+          // radioType = NETWORK_TYPE_HSPAP;
+      /* } */else {
            radioType = NETWORK_TYPE_UNKNOWN;
        }
 
@@ -3617,9 +3708,10 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_UNSOL_RINGBACK_TONE: return "UNSOL_RINGBACK_TONG";
             case RIL_UNSOL_RESEND_INCALL_MUTE: return "UNSOL_RESEND_INCALL_MUTE";
             case RIL_UNSOL_CDMA_SUBSCRIPTION_SOURCE_CHANGED: return "CDMA_SUBSCRIPTION_SOURCE_CHANGED";
-            case RIL_UNSOl_CDMA_PRL_CHANGED: return "UNSOL_CDMA_PRL_CHANGED";
+            case RIL_UNSOL_CDMA_PRL_CHANGED: return "UNSOL_CDMA_PRL_CHANGED";
             case RIL_UNSOL_EXIT_EMERGENCY_CALLBACK_MODE: return "UNSOL_EXIT_EMERGENCY_CALLBACK_MODE";
-            case RIL_UNSOL_RIL_CONNECTED: return "UNSOL_RIL_CONNECTED";
+  //          case RIL_UNSOL_RIL_CONNECTED : return "UNSOL_RIL_CONNECTED";
+            case RIL_UNSOL_VOICE_RADIO_TECH_CHANGED: return "UNSOL_VOICE_RADIO_TECH_CHANGED";
             default: return "<unknown reponse>";
         }
     }

@@ -144,7 +144,7 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
 
     private ContentResolver cr;
     private String currentCarrier = null;
-
+    private boolean mIsSamsungCdma = SystemProperties.getBoolean("ro.ril.samsung_cdma", false);
     private ContentObserver mAutoTimeObserver = new ContentObserver(new Handler()) {
         @Override
         public void onChange(boolean selfChange) {
@@ -300,40 +300,38 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
             pollState();
             break;
 
-
-/*
+     /*
  * KD 8/28 - Handle CDMA Subscription Source Notification
  */
         case EVENT_CDMA_SUBSCRIPTION_SOURCE_CHANGED:
             Log.w(LOG_TAG, "CDMA Subscription Source Upcall request");
-            cm.getCDMASubscription( obtainMessage(EVENT_POLL_STATE_CDMA_SUBSCRIPTION));    
+            cm.getCDMASubscription( obtainMessage(EVENT_POLL_STATE_CDMA_SUBSCRIPTION));
             break;
 /*
  * KD 10/23 - Pull the PRL version if it has changed
  */
         case EVENT_CDMA_PRL_VERSION_CHANGED:
             Log.w(LOG_TAG, "PRL Version Upcall request");
-            cm.getCDMAPrlVersion(obtainMessage(EVENT_POLL_STATE_PRL_VERSION_CHANGED));	
+            cm.getCDMAPrlVersion(obtainMessage(EVENT_POLL_STATE_PRL_VERSION_CHANGED));
             break;
 
         case EVENT_POLL_STATE_PRL_VERSION_CHANGED:
             ar = (AsyncResult) msg.obj;
 
             if (ar.exception == null) {
-                String PrlNumber = (String)ar.result;
-	    	Log.w(LOG_TAG, "PRL: " + PrlNumber);
+                String PrlNumber = (String)ar.result; // ar.result is an array of strings
+                Log.w(LOG_TAG, "PRL: " + PrlNumber);
 // KD 10-23 
 // If the returned PRL is valid, use it.  Otherwise use the sysprop version
 //
-		if (PrlNumber != null) {
-			mPrlVersion = PrlNumber;
-		}
-	    } else {
-	    	Log.e(LOG_TAG, "PRL grab FAILED - no return string");
-	    }
-	    break;
+                if (PrlNumber != null) {
+                        mPrlVersion = PrlNumber;
+                }
+            } else {
+                Log.e(LOG_TAG, "PRL grab FAILED - no return string");
+            }
+            break;
 // End KD
-
 
         case EVENT_NETWORK_STATE_CHANGED_CDMA:
             pollState();
@@ -366,16 +364,27 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
 
                 if (states.length > 9) {
                     try {
+                         // Samsung CDMA devices provide following states
+                        // in hex format as opposed to dec
                         if (states[4] != null) {
-                            baseStationId = Integer.parseInt(states[4]);
+                            if (mIsSamsungCdma)
+                                baseStationId = Integer.parseInt(states[4], 16);
+                            else
+                                baseStationId = Integer.parseInt(states[4]);
                         }
                         if (states[5] != null) {
-                            baseStationLatitude = Integer.parseInt(states[5]);
+                            if (mIsSamsungCdma)
+                                baseStationLatitude = Integer.parseInt(states[5], 16);
+                            else
+                                baseStationLatitude = Integer.parseInt(states[5]);
                         }
                         if (states[6] != null) {
-                            baseStationLongitude = Integer.parseInt(states[6]);
+                            if (mIsSamsungCdma)
+                                baseStationLongitude = Integer.parseInt(states[6], 16);
+                            else
+                                baseStationLongitude = Integer.parseInt(states[6]);
                         }
-                        // Some carriers only return lat-lngs of 0,0
+			// Some carriers only return lat-lngs of 0,0
                         if (baseStationLatitude == 0 && baseStationLongitude == 0) {
                             baseStationLatitude  = CdmaCellLocation.INVALID_LAT_LONG;
                             baseStationLongitude = CdmaCellLocation.INVALID_LAT_LONG;
@@ -528,6 +537,16 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
                 }
             }
             break;
+
+	/*case EVENT_SET_RADIO_POWER_OFF:
+            synchronized(this) {
+                if (mPendingRadioPowerOffAfterDataOff) {
+                    if (DBG) log("EVENT_SET_RADIO_OFF, turn radio off now.");
+                    hangupAndPowerOff();
+                    mPendingRadioPowerOffAfterDataOff = false;
+                }
+            }
+            break; */
 
         default:
             super.handleMessage(msg);
@@ -804,7 +823,7 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
                 isPrlLoaded = false;
             }
             if (!isPrlLoaded) {
-                newSS.setCdmaRoamingIndicator(EriInfo.ROAMING_INDICATOR_OFF);
+                newSS.setCdmaRoamingIndicator(EriInfo.ROAMING_INDICATOR_FLASH);
             } else if (!isSidsAllZeros()) {
                 if (!namMatch && !mIsInPrl) {
                     // Use default
