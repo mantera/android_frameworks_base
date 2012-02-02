@@ -1012,6 +1012,12 @@ public final class SimulatedCommands extends BaseCommands
     public void getCdmaSubscriptionSource(Message result) {
         unimplemented(result);
     }
+    
+    public void
+    getCDMAPrlVersion(Message response) {
+        Log.w(LOG_TAG, "CDMA not implemented in SimulatedCommands");
+        unimplemented(response);
+    }
 
     private boolean isSimLocked() {
         if (mSimLockedState != SimLockState.NONE) {

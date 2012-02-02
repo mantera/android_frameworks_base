@@ -1477,6 +1477,14 @@ public interface CommandsInterface {
      */
     public void getCDMASubscription(Message response);
 
+   /**	
+     * Request the device PRL for CDMA Services.
+     * "response" is const char **	
+     *   [0] is the PRL Version	
+     */
+	
+    public void getCDMAPrlVersion(Message response);
+
     /**
      * Send Flash Code.
      * "response" is is NULL
