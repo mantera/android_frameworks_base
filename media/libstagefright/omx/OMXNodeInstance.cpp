@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*--------------------------------------------------------------------------
+Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+--------------------------------------------------------------------------*/
 
 //#define LOG_NDEBUG 0
 #define LOG_TAG "OMXNodeInstance"
@@ -619,7 +622,7 @@ status_t OMXNodeInstance::freeBuffer(
             buffer_meta = NULL;
         }
     } else {
-        LOGE("OMX_FreeBuffer failed with err 0x%08x", err);
+        ALOGE("OMX_FreeBuffer failed with err 0x%08x", err);
     }
 #else
     delete buffer_meta;

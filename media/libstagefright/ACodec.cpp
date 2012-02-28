@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /*--------------------------------------------------------------------------
-Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
 --------------------------------------------------------------------------*/
 
 //#define LOG_NDEBUG 0
@@ -374,7 +374,7 @@ protected:
 
     virtual bool onOMXEvent(OMX_EVENTTYPE event, OMX_U32 data1, OMX_U32 data2);
 
-    virtual void onOutputBufferDrained(const sp<AMessage> &msg);
+    virtual void onOFlushingOutputStateutputBufferDrained(const sp<AMessage> &msg);
     virtual void onInputBufferFilled(const sp<AMessage> &msg);
 
 private:
@@ -556,7 +556,7 @@ status_t ACodec::allocateOutputBuffersFromNativeWindow() {
             def.format.video.eColorFormat);
 #endif
 #endif
-
+            format);
 
     if (err != 0) {
         LOGE("native_window_set_buffers_geometry failed: %s (%d)",
@@ -644,7 +644,6 @@ status_t ACodec::allocateOutputBuffersFromNativeWindow() {
         return err;
     }
 #endif
-
 
     LOGV("[%s] Allocating %lu buffers from a native window of size %lu on "
          "output port",
@@ -1244,7 +1243,6 @@ status_t ACodec::setVideoFormatOnPort(
 #ifdef QCOM_HARDWARE
             && !mSmoothStreaming
 #endif
-            ) {
         // XXX Need a (much) better heuristic to compute input buffer sizes.
         const size_t X = 64 * 1024;
         if (def.nBufferSize < X) {
@@ -1993,6 +1991,7 @@ bool ACodec::BaseState::onOMXFillBufferDone(
                     new AMessage(kWhatOutputBufferDrained, mCodec->id());
 
                 reply->setPointer("buffer-id", info->mBufferID);
+
 #ifdef QCOM_HARDWARE
                 reply->setInt32("flags", flags);
 #endif

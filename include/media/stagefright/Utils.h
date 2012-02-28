@@ -19,7 +19,9 @@
 #define UTILS_H_
 
 #include <stdint.h>
+#ifdef QCOM_HARDWARE
 #include <utils/Errors.h>
+#endif
 
 namespace android {
 

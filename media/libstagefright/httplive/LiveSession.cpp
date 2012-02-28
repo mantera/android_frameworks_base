@@ -515,7 +515,7 @@ rinse_repeat:
                 // We succeeded in fetching the playlist, but it was
                 // unchanged from the last time we tried.
             } else if (!mSeeking) {
-                LOGE("failed to load playlist at url '%s'", url.c_str());
+		LOGE("failed to load playlist at url '%s'", url.c_str());
                 mDataSource->queueEOS(ERROR_IO);
                 return;
             } else {
@@ -555,7 +555,6 @@ rinse_repeat:
 
     bool explicitDiscontinuity = false;
     bool bandwidthChanged = false;
-
 
     if (mSeqNumber < 0) {
         mSeqNumber = mFirstSeqNumber;
@@ -934,4 +933,3 @@ bool LiveSession::isSeekable() {
 }
 
 }  // namespace android
-

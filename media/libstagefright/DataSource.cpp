@@ -34,7 +34,6 @@
 #endif
 
 #include <media/stagefright/MediaDefs.h>
-
 #include "matroska/MatroskaExtractor.h"
 
 #include <media/stagefright/foundation/AMessage.h>
