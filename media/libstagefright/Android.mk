@@ -100,6 +100,8 @@ LOCAL_SHARED_LIBRARIES := \
         libcrypto        \
         libssl           \
         libgui           \
+        libhardware_legacy \
+        libpowermanager
 
 LOCAL_STATIC_LIBRARIES := \
         libstagefright_color_conversion \
