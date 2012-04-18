@@ -852,11 +852,11 @@ public class NetworkManagementService extends INetworkManagementService.Stub
 
     private void modifyNat(String cmd, String internalInterface, String externalInterface) {
         cmd = String.format("nat %s %s %s", cmd, internalInterface, externalInterface);
-	NetworkInterface internalNetworkInterface = null;
+        NetworkInterface internalNetworkInterface = null;
         try {
             internalNetworkInterface = NetworkInterface.getByName(internalInterface);
         } catch (SocketException e) {
-	    Log.e(TAG, "failed to get ifindex. continuing.");
+            Log.e(TAG, "failed to get ifindex. continuing.");
         }
         if (internalNetworkInterface == null) {
             cmd += " 0";
