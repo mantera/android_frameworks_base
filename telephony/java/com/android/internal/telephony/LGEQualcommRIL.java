@@ -205,7 +205,7 @@ public class LGEQualcommRIL extends RIL implements CommandsInterface {
             case RIL_REQUEST_REPORT_STK_SERVICE_IS_RUNNING: ret = responseVoid(p); break;
             case 104: ret = responseInts(p); break; // RIL_REQUEST_VOICE_RADIO_TECH
             case 105: ret = responseInts(p); break; // RIL_REQUEST_CDMA_GET_SUBSCRIPTION_SOURCE
-            case 106: ret = responseStrings(p); break; // RIL_REQUEST_CDMA_PRL_VERSION
+            case 106: ret = responseString(p); break; // RIL_REQUEST_CDMA_PRL_VERSION
             case 107: ret = responseInts(p);  break; // RIL_REQUEST_IMS_REGISTRATION_STATE
             case 108: ret = responseSMS(p);  break; // RIL_REQUEST_IMS_SEND_SMS
 
@@ -640,20 +640,27 @@ public class LGEQualcommRIL extends RIL implements CommandsInterface {
                 break;
             case RIL_INT_RADIO_ON:
             case RIL_INT_RADIO_ON_NG:
-                if (mIccHandler == null) {
-                    handlerThread = new HandlerThread("IccHandler");
-                    mIccThread = handlerThread;
-
-                    mIccThread.start();
-
-                    looper = mIccThread.getLooper();
-                    mIccHandler = new IccHandler(this,looper);
-                    mIccHandler.run();
+                if (SystemProperties.getBoolean("ro.telephony.no_icc", false) == true) {
+                    // We don't want to poll ICC events if this is a phone that doesn't 
+                    // support it, such as the Motorola Triumph
+                    radioState = CommandsInterface.RadioState.NV_READY;
                 }
-                if (mPhoneType == RILConstants.CDMA_PHONE) {
-                    radioState = CommandsInterface.RadioState.RUIM_NOT_READY;
-                } else {
-                    radioState = CommandsInterface.RadioState.SIM_NOT_READY;
+                else {
+                    if (mIccHandler == null) {
+                        handlerThread = new HandlerThread("IccHandler");
+                        mIccThread = handlerThread;
+
+                        mIccThread.start();
+
+                        looper = mIccThread.getLooper();
+                        mIccHandler = new IccHandler(this,looper);
+                        mIccHandler.run();
+                    }
+                    if (mPhoneType == RILConstants.CDMA_PHONE) {
+                        radioState = CommandsInterface.RadioState.RUIM_NOT_READY;
+                    } else {
+                        radioState = CommandsInterface.RadioState.SIM_NOT_READY;
+                    }
                 }
                 setRadioState(radioState);
                 break;
