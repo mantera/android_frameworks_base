@@ -544,6 +544,13 @@ status_t ACodec::allocateOutputBuffersFromNativeWindow() {
             mNativeWindow.get(),
             def.format.video.nStride,
             def.format.video.nSliceHeight,
+            eNativeColorFormat);
+#else
+    err = native_window_set_buffers_geometry(
+            mNativeWindow.get(),
+            def.format.video.nStride,
+            def.format.video.nSliceHeight,
+#ifdef QCOM_HARDWARE
             format);
 #else
             def.format.video.eColorFormat);
