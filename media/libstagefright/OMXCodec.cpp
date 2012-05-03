@@ -154,7 +154,6 @@ const int32_t ColorFormatInfo::preferredColorFormat[] = {
 static sp<MediaSource> Make##name(const sp<MediaSource> &source) { \
     return new name(source); \
 }
-#endif
 
 #define FACTORY_CREATE_ENCODER(name) \
 static sp<MediaSource> Make##name(const sp<MediaSource> &source, const sp<MetaData> &meta) { \
@@ -450,12 +449,8 @@ static void InitOMXParams(T *params) {
 }
 
 static bool IsSoftwareCodec(const char *componentName) {
-#ifdef QCOM_HARDWARE
     if (!strncmp("OMX.google.", componentName, 11)
 	    || !strncmp("OMX.PV.", componentName, 7)) {
-#else
-    if (!strncmp("OMX.google.", componentName, 11)) {
-#endif
         return true;
     }
 
@@ -1038,7 +1033,6 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
 
             CHECK(meta->findData(kKeyVorbisBooks, &type, &data, &size));
             addCodecSpecificData(data, size);
-#ifdef QCOM_HARDWARE
         } else if (meta->findData(kKeyRawCodecSpecificData, &type, &data, &size)) {
             LOGV("OMXCodec::configureCodec found kKeyRawCodecSpecificData of size %d\n", size);
             addCodecSpecificData(data, size);
@@ -1075,55 +1069,8 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
                          &paramDivX, sizeof(paramDivX));
         if (err!=OK) {
             return err;
-#endif
-        }
-#else
-        }
-#endif
-    }
-
-#ifdef QCOM_HARDWARE
-    if (!strcasecmp(MEDIA_MIMETYPE_VIDEO_DIVX, mMIME) ||
-        !strcasecmp(MEDIA_MIMETYPE_VIDEO_DIVX4, mMIME) ||
-        !strcasecmp(MEDIA_MIMETYPE_VIDEO_DIVX311, mMIME)) {
-        LOGV("Setting the QOMX_VIDEO_PARAM_DIVXTYPE params ");
-        QOMX_VIDEO_PARAM_DIVXTYPE paramDivX;
-        InitOMXParams(&paramDivX);
-        paramDivX.nPortIndex = mIsEncoder ? kPortIndexOutput : kPortIndexInput;
-        int32_t DivxVersion = 0;
-        CHECK(meta->findInt32(kKeyDivXVersion,&DivxVersion));
-        CODEC_LOGV("Divx Version Type %d\n",DivxVersion);
-
-        if(DivxVersion == kTypeDivXVer_4) {
-            paramDivX.eFormat = QOMX_VIDEO_DIVXFormat4;
-        } else if(DivxVersion == kTypeDivXVer_5) {
-            paramDivX.eFormat = QOMX_VIDEO_DIVXFormat5;
-        } else if(DivxVersion == kTypeDivXVer_6) {
-            paramDivX.eFormat = QOMX_VIDEO_DIVXFormat6;
-        } else if(DivxVersion == kTypeDivXVer_3_11 ) {
-            paramDivX.eFormat = QOMX_VIDEO_DIVXFormat311;
-        } else {
-            paramDivX.eFormat = QOMX_VIDEO_DIVXFormatUnused;
-        }
-        paramDivX.eProfile = (QOMX_VIDEO_DIVXPROFILETYPE)0;//Not used for now.
-
-        paramDivX.pDrmHandle = NULL;
-        if (meta->findPointer(kKeyDivXDrm, &paramDivX.pDrmHandle) ) {
-            if( paramDivX.pDrmHandle != NULL ) {
-                LOGV("This DivX Clip is DRM encrypted, set the DRM handle ");
-            }
-            else {
-                LOGV("This DivX Clip is not DRM encrypted ");
-            }
-        }
-        status_t err =  mOMX->setParameter(mNode,
-                         (OMX_INDEXTYPE)OMX_QcomIndexParamVideoDivx,
-                         &paramDivX, sizeof(paramDivX));
-        if (err!=OK) {
-            return err;
         }
     }
-#endif
 
     int32_t bitRate = 0;
     if (mIsEncoder) {
@@ -4090,10 +4037,7 @@ bool OMXCodec::flushPortAsync(OMX_U32 portIndex) {
         // flush-complete event in this case.
 
         return false;
-#ifdef QCOM_HARDWARE
         }
-#endif
-    }
 #ifdef QCOM_HARDWARE
     }
 #endif
@@ -5525,9 +5469,6 @@ status_t OMXCodec::read(
 
         if (emulateOutputFlushCompletion) {
             onCmdComplete(OMX_CommandFlush, kPortIndexOutput);
-#ifdef QCOM_HARDWARE
-        }
-#endif
         }
 #ifdef QCOM_HARDWARE
         }
@@ -6371,14 +6312,6 @@ void OMXCodec::parseFlags() {
 }
 #endif
 
-#ifdef QCOM_HARDWARE
-void OMXCodec::parseFlags(uint32_t flags) {
-    //TODO - uncomment if needed
-    //    mGPUComposition = ((flags & kEnableGPUComposition) ? true : false);
-    mThumbnailMode = ((flags & kEnableThumbnailMode) ? true : false);
-}
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 
 status_t QueryCodecs(
@@ -6637,5 +6570,4 @@ status_t OMXCodec::processSEIData() {
     return OK;
 }
 #endif
-
 }  // namespace android

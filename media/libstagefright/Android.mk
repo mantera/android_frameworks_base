@@ -73,11 +73,6 @@ LOCAL_SRC_FILES:=                         \
         XINGSeeker.cpp                    \
         avc_utils.cpp                     \
 
-ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
-        LOCAL_SRC_FILES += ExtendedExtractor.cpp
-        LOCAL_SRC_FILES += ExtendedWriter.cpp
-	LOCAL_C_INCLUDES += $(TOP)/hardware/qcom/display/libqcomui
-endif
 
 LOCAL_C_INCLUDES+= \
 	$(JNI_H_INCLUDE) \
@@ -131,6 +126,7 @@ LOCAL_SRC_FILES += \
         ExtendedExtractor.cpp             \
         ExtendedWriter.cpp                \
         FMA2DPWriter.cpp
+endif
 
 LOCAL_C_INCLUDES += \
 	$(TOP)/external/alsa-lib/include/sound \

@@ -65,8 +65,6 @@ const char *MEDIA_MIMETYPE_CONTAINER_AAC = "audio/aac";
 const char *MEDIA_MIMETYPE_CONTAINER_QCP = "audio/vnd.qcelp";
 const char *MEDIA_MIMETYPE_VIDEO_DIVX311 = "video/divx311";
 const char *MEDIA_MIMETYPE_VIDEO_DIVX4 = "video/divx4";
-const char *MEDIA_MIMETYPE_CONTAINER_MPEG2 = "video/mp2";
-const char *MEDIA_MIMETYPE_CONTAINER_3G2 = "video/3g2";
 #endif
 const char *MEDIA_MIMETYPE_TEXT_3GPP = "text/3gpp-tt";
 
