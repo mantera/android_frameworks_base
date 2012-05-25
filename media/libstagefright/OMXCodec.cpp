@@ -776,7 +776,6 @@ sp<MediaSource> OMXCodec::Create(
         }
 
         LOGV("Attempting to allocate OMX node '%s'", componentName);
-#endif
 
         uint32_t quirks = getComponentQuirks(componentNameBase, createEncoder);
 #ifdef QCOM_HARDWARE
@@ -986,16 +985,8 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
             esds.getCodecSpecificInfo(
                     &codec_specific_data, &codec_specific_data_size);
 
-#ifdef QCOM_HARDWARE
-            meta->findCString(kKeyMIMEType, &mime_type);
-            if (strncmp(mime_type, MEDIA_MIMETYPE_AUDIO_MPEG, 10)) {
-                addCodecSpecificData(codec_specific_data,
-                        codec_specific_data_size);
-            }
-#else
             addCodecSpecificData(
                     codec_specific_data, codec_specific_data_size);
-#endif
         } else if (meta->findData(kKeyAVCC, &type, &data, &size)) {
             // Parse the AVCDecoderConfigurationRecord
 
@@ -6308,37 +6299,6 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
     }
 }
 
-#ifdef QCOM_HARDWARE
-status_t OMXCodec::pause() {
-   CODEC_LOGV("pause mState=%d", mState);
-
-   Mutex::Autolock autoLock(mLock);
-
-   if (mState != EXECUTING) {
-       return UNKNOWN_ERROR;
-   }
-
-   while (isIntermediateState(mState)) {
-       mAsyncCompletion.wait(mLock);
-   }
-   if (!strncmp(mComponentName, "OMX.qcom.", 9)) {
-       status_t err = mOMX->sendCommand(mNode,
-           OMX_CommandStateSet, OMX_StatePause);
-       CHECK_EQ(err, (status_t)OK);
-       setState(PAUSING);
-
-       mPaused = true;
-       while (mState != PAUSED && mState != ERROR) {
-           mAsyncCompletion.wait(mLock);
-       }
-       return mState == ERROR ? UNKNOWN_ERROR : OK;
-   } else {
-       mPaused = true;
-       return OK;
-   }
-
-}
-#else
 status_t OMXCodec::pause() {
    CODEC_LOGV("pause mState=%d", mState);
 
