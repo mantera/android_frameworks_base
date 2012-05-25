@@ -178,6 +178,8 @@ private:
         size_t mSize;
         void *mData;
         MediaBuffer *mMediaBuffer;
+        OMX_U8 *mAllocatedBuffer;
+        size_t mAllocatedSize;
     };
 
     struct CodecSpecificData {
@@ -408,6 +410,8 @@ private:
     int64_t latenessUs;
     uint32_t LC_level; // LOW_COMPLEXITY level
     int32_t mInterlaceFrame;
+    int32_t mNumBFrames;
+    bool mUseArbitraryMode;
 #endif
 };
 

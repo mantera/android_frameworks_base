@@ -1,7 +1,10 @@
 LOCAL_PATH:= $(call my-dir)
+
+ifeq ($(TARGET_USES_QCOM_LPA),true)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
+        MP3Decoder.cpp \
 	src/pvmp3_normalize.cpp \
  	src/pvmp3_alias_reduction.cpp \
  	src/pvmp3_crc.cpp \
@@ -59,8 +62,8 @@ LOCAL_MODULE := libstagefright_mp3dec
 
 include $(BUILD_STATIC_LIBRARY)
 
+endif
 
-ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
 #LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -141,8 +144,7 @@ LOCAL_STATIC_LIBRARIES := \
         libstagefright_mp3dec_omx
 else
 LOCAL_STATIC_LIBRARIES := \
-        libstagefright_mp3dec
-endif
+        libstagefright_mp3dec_omx
 
 LOCAL_MODULE := libstagefright_soft_mp3dec
 LOCAL_MODULE_TAGS := optional

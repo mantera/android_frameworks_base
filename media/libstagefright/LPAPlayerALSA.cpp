@@ -31,7 +31,7 @@
 #include <media/AudioTrack.h>
 
 extern "C" {
-   #include <asound.h>
+   #include <sound/asound.h>
    #include "alsa_audio.h"
 }
 
@@ -48,6 +48,7 @@ extern "C" {
 #include <linux/unistd.h>
 
 #include "include/AwesomePlayer.h"
+
 #include <powermanager/PowerManager.h>
 
 static const char   mName[] = "LPAPlayer";
@@ -549,7 +550,7 @@ void LPAPlayer::pause(bool playPendingSamples) {
             }
             if (!mPauseEventPending) {
                 LOGV("Posting an event for Pause timeout");
-                acquireWakeLock();
+
                 mQueue.postEventWithDelay(mPauseEvent, LPA_PAUSE_TIMEOUT_USEC);
                 mPauseEventPending = true;
             }
@@ -584,7 +585,7 @@ void LPAPlayer::pause(bool playPendingSamples) {
 
                 if(!mPauseEventPending) {
                     LOGV("Posting an event for Pause timeout");
-                    acquireWakeLock();
+
                     mQueue.postEventWithDelay(mPauseEvent, LPA_PAUSE_TIMEOUT_USEC);
                     mPauseEventPending = true;
                 }
@@ -738,7 +739,7 @@ void LPAPlayer::reset() {
     memBufferDeAlloc();
     LOGE("Buffer Deallocation complete! Closing pcm handle");
 
-    if (!isPaused && !bIsA2DPEnabled) {
+    if (local_handle->start) {
         if (ioctl(local_handle->fd, SNDRV_PCM_IOCTL_PAUSE,1) < 0) {
             LOGE("Audio Pause failed");
         }
