@@ -861,6 +861,23 @@ public:
     static const char KEY_MIN_SATURATION[];
 #endif
 
+//
+// KD 9/28 - Add reuqired parameters for Froyo on the Triumph - should not
+// break other cameras.
+//
+    static const char WIDESCREEN_4_3[];
+    static const char WIDESCREEN_5_3[];
+    static const char KEY_MAX_BRIGHTNESS[];
+    static const char KEY_SUPPORTED_WIDESCREEN[];
+    static const char KEY_BRIGHTNESS[];
+    static const char KEY_WIDESCREEN[];
+    static const char KEY_DEF_SHARPNESS[];
+    static const char KEY_DEF_CONTRAST[];
+    static const char KEY_DEF_BRIGHTNESS[];
+    static const char KEY_MIN_BRIGHTNESS[];
+    static const char KEY_DEF_SATURATION[];
+// end
+
     static const char KEY_HISTOGRAM[] ;
     static const char KEY_SUPPORTED_HISTOGRAM_MODES[] ;
     // Values for HISTOGRAM

@@ -89,8 +89,8 @@ const char CameraParameters::KEY_SUPPORTED_ANTIBANDING[] = "antibanding-values";
 const char CameraParameters::KEY_SCENE_MODE[] = "scene-mode";
 const char CameraParameters::KEY_SUPPORTED_SCENE_MODES[] = "scene-mode-values";
 #ifdef QCOM_HARDWARE
-const char CameraParameters::KEY_SCENE_DETECT[] = "scene-detect";
-const char CameraParameters::KEY_SUPPORTED_SCENE_DETECT[] = "scene-detect-values";
+const char CameraParameters::KEY_SCENE_DETECT[] = "none";
+const char CameraParameters::KEY_SUPPORTED_SCENE_DETECT[] = "none";
 #endif
 const char CameraParameters::KEY_FLASH_MODE[] = "flash-mode";
 const char CameraParameters::KEY_SUPPORTED_FLASH_MODES[] = "flash-mode-values";
@@ -273,7 +273,7 @@ const char CameraParameters::FOCUS_MODE_CONTINUOUS_CAMERA[] = "continuous-camera
 const char CameraParameters::FOCUS_MODE_NORMAL[] = "normal";
 
 
-const char CameraParameters::KEY_SKIN_TONE_ENHANCEMENT[] = "skinToneEnhancement";
+const char CameraParameters::KEY_SKIN_TONE_ENHANCEMENT[] = "skin-tone";
 const char CameraParameters::KEY_SUPPORTED_SKIN_TONE_ENHANCEMENT_MODES[] = "skinToneEnhancement-values";
 
 // Values for ISO Settings
@@ -313,24 +313,41 @@ const char CameraParameters::SKIN_TONE_ENHANCEMENT_DISABLE[] = "disable";
 const char CameraParameters::KEY_SHARPNESS[] = "sharpness";
 #ifdef QCOM_HARDWARE
 const char CameraParameters::KEY_MAX_SHARPNESS[] = "sharpness-max";
-const char CameraParameters::KEY_MIN_SHARPNESS[] = "sharpness-min";
 #else
 const char CameraParameters::KEY_MAX_SHARPNESS[] = "max-sharpness";
 #endif
 const char CameraParameters::KEY_CONTRAST[] = "contrast";
 #ifdef QCOM_HARDWARE
 const char CameraParameters::KEY_MAX_CONTRAST[] = "contrast-max";
-const char CameraParameters::KEY_MIN_CONTRAST[] = "contrast-min";
 #else
 const char CameraParameters::KEY_MAX_CONTRAST[] = "max-contrast";
 #endif
 const char CameraParameters::KEY_SATURATION[] = "saturation";
 #ifdef QCOM_HARDWARE
 const char CameraParameters::KEY_MAX_SATURATION[] = "saturation-max";
-const char CameraParameters::KEY_MIN_SATURATION[] = "saturation-min";
 #else
 const char CameraParameters::KEY_MAX_SATURATION[] = "max-saturation";
 #endif
+
+//
+// KD 9/28 - Add parameters for Froyo camera in Triumph - should not break 
+// other cameras
+//
+const char CameraParameters::KEY_MAX_BRIGHTNESS[] = "max-brightness";
+const char CameraParameters::KEY_BRIGHTNESS[] = "brightness";
+const char CameraParameters::WIDESCREEN_4_3[] = "off";
+const char CameraParameters::WIDESCREEN_5_3[] = "off";
+const char CameraParameters::KEY_SUPPORTED_WIDESCREEN[] = "none";
+const char CameraParameters::KEY_WIDESCREEN[] = "widescreen";
+const char CameraParameters::KEY_DEF_SHARPNESS[] = "2";
+const char CameraParameters::KEY_MIN_SHARPNESS[] = "0";
+const char CameraParameters::KEY_DEF_CONTRAST[] = "2";
+const char CameraParameters::KEY_MIN_CONTRAST[] = "0";
+const char CameraParameters::KEY_DEF_SATURATION[] = "2";
+const char CameraParameters::KEY_MIN_SATURATION[] = "0";
+const char CameraParameters::KEY_DEF_BRIGHTNESS[] = "2";
+const char CameraParameters::KEY_MIN_BRIGHTNESS[] = "0";
+//end
 
 //Values for DENOISE
 const char CameraParameters::DENOISE_OFF[] = "denoise-off";

@@ -1653,13 +1653,13 @@ public class Camera {
         private static final String KEY_TOUCH_INDEX_AF = "touch-index-af";
         private static final String KEY_ANTIBANDING = "antibanding";
         private static final String KEY_SCENE_MODE = "scene-mode";
-        private static final String KEY_SCENE_DETECT = "scene-detect";
+        private static final String KEY_SCENE_DETECT = "";
         private static final String KEY_FLASH_MODE = "flash-mode";
         private static final String KEY_FOCUS_MODE = "focus-mode";
 		private static final String KEY_ISO_MODE = "iso";
         private static final String KEY_LENSSHADE = "lensshade";
         private static final String KEY_HISTOGRAM = "histogram";
-        private static final String KEY_SKIN_TONE_ENHANCEMENT = "skinToneEnhancement";
+        private static final String KEY_SKIN_TONE_ENHANCEMENT = "none";
         private static final String KEY_FOCUS_AREAS = "focus-areas";
         private static final String KEY_MAX_NUM_FOCUS_AREAS = "max-num-focus-areas";
         private static final String KEY_FOCAL_LENGTH = "focal-length";
@@ -1703,10 +1703,30 @@ public class Camera {
         private static final String KEY_SELECTABLE_ZONE_AF = "selectable-zone-af";
         private static final String KEY_FACE_DETECTION = "face-detection";
         private static final String KEY_MEMORY_COLOR_ENHANCEMENT = "mce";
-	private static final String KEY_REDEYE_REDUCTION = "redeye-reduction";
+        private static final String KEY_REDEYE_REDUCTION = "redeye-reduction";
         private static final String KEY_ZSL = "zsl";
         private static final String KEY_CAMERA_MODE = "camera-mode";
         private static final String KEY_VIDEO_HIGH_FRAME_RATE = "video-hfr";
+
+	/*
+    	 * KD 9/28 - Froyo camera scene mode options (several added)
+   	 */
+        public static final String KEY_DEF_SHARPNESS = "";
+        public static final String KEY_MIN_SHARPNESS = "";
+        public static final String KEY_DEF_CONTRAST = "";
+        public static final String KEY_MIN_CONTRAST = "";
+        public static final String KEY_DEF_BRIGHTNESS = "";
+        public static final String KEY_MIN_BRIGHTNESS = "";
+        public static final String KEY_DEF_SATURATION = "";
+        public static final String KEY_MIN_SATURATION = "";
+        private static final String KEY_BRIGHTNESS = "brightness";
+        private static final String KEY_MAX_BRIGHTNESS = "brightness-max";
+        private static final String KEY_DEFAULT_BRIGHTNESS = "brightness-def";
+        public static final String KEY_SUPPORTED_SCENE_DETECT = "";
+        public static final String KEY_SUPPORTED_WIDESCREEN = "";
+        public static final String WIDESCREEN_4_3 = "";
+        public static final String WIDESCREEN_5_3 = "";
+        public static final String KEY_WIDESCREEN = "none";
 
         // Parameter key suffix for supported values.
         private static final String SUPPORTED_VALUES_SUFFIX = "-values";
@@ -1786,6 +1806,8 @@ public class Camera {
         public static final String SKIN_TONE_ENHANCEMENT_ENABLE = "enable";
         /** @hide */
         public static final String SKIN_TONE_ENHANCEMENT_DISABLE= "disable";
+
+        public static final String KEY_SUPPORTED_SKIN_TONE_ENHANCEMENT_MODES = "none";
 
         // Values for MCE settings.
         /** @hide */
@@ -3158,6 +3180,46 @@ public class Camera {
          */
         public int getMaxSaturation(){
             return getInt(KEY_MAX_SATURATION);
+        }
+
+        /**
+         * Get brightness level
+         *
+         * @return brightness level
+         */
+        public int getBrightness(){
+            return getInt(KEY_BRIGHTNESS, 0);
+        }
+
+        /**
+         * Set brightness level
+         *
+         * @param brightness level
+         */
+        public void setBrightness(int brightness){
+            if((brightness < 0 ) || (brightness > getMaxBrightness()))
+                throw new IllegalArgumentException(
+                        "Invalid Brightness " + brightness);
+
+            set(KEY_BRIGHTNESS, String.valueOf(brightness));
+        }
+
+        /**
+         * Get Max Brightness Level
+         *
+         * @return max brightness level
+         */
+        public int getMaxBrightness(){
+            return getInt(KEY_MAX_BRIGHTNESS, 0);
+        }
+
+        /**
+         * Get default brightness level
+         * 
+         * @return default brightness level
+         */
+        public int getDefaultBrightness() {
+            return getInt(KEY_DEFAULT_BRIGHTNESS, 0);
         }
 
         /**
