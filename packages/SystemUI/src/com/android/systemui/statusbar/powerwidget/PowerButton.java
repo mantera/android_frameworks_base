@@ -6,12 +6,14 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff.Mode;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -65,6 +67,11 @@ public abstract class PowerButton {
     private View.OnClickListener mExternalClickListener;
     private View.OnLongClickListener mExternalLongClickListener;
 
+    protected boolean mHapticFeedback;
+    protected Vibrator mVibrator;
+    private long[] mClickPattern;
+    private long[] mLongClickPattern;
+
     // we use this to ensure we update our views on the UI thread
     private Handler mViewUpdateHandler = new Handler() {
         @Override
@@ -102,12 +109,12 @@ public abstract class PowerButton {
         }
     };
 
-    protected abstract void updateState();
-    protected abstract void toggleState();
-    protected abstract boolean handleLongClick();
+    protected abstract void updateState(Context context);
+    protected abstract void toggleState(Context context);
+    protected abstract boolean handleLongClick(Context context);
 
-    protected void update() {
-        updateState();
+    protected void update(Context context) {
+        updateState(context);
         updateView();
     }
 
@@ -116,9 +123,16 @@ public abstract class PowerButton {
         // to broadcast events from the StatusBarService broadcast receiver
     }
 
-    protected void onChangeUri(Uri uri) {
+    protected void onChangeUri(ContentResolver resolver, Uri uri) {
         // do nothing as a standard, override this if the button needs to respond
         // to a changed setting
+    }
+
+    /* package */ void setHapticFeedback(boolean enabled,
+            long[] clickPattern, long[] longClickPattern) {
+        mHapticFeedback = enabled;
+        mClickPattern = clickPattern;
+        mLongClickPattern = longClickPattern;
     }
 
     protected IntentFilter getBroadcastIntentFilter() {
@@ -138,6 +152,7 @@ public abstract class PowerButton {
 
             mIconView = (ImageView) mView.findViewById(R.id.power_widget_button_image);
             mIndicatorView = (ImageView) mView.findViewById(R.id.power_widget_button_indic);
+            mVibrator = (Vibrator) mView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
         } else {
             mIconView = null;
             mIndicatorView = null;
@@ -150,7 +165,12 @@ public abstract class PowerButton {
 
     private View.OnClickListener mClickListener = new View.OnClickListener() {
         public void onClick(View v) {
-            toggleState();
+            if (mHapticFeedback && mClickPattern != null) {
+                mVibrator.vibrate(mClickPattern, -1);
+            }
+
+            toggleState(v.getContext());
+            update(v.getContext());
 
             if (mExternalClickListener != null) {
                 mExternalClickListener.onClick(v);
@@ -160,7 +180,11 @@ public abstract class PowerButton {
 
     private View.OnLongClickListener mLongClickListener = new View.OnLongClickListener() {
         public boolean onLongClick(View v) {
-            boolean result = handleLongClick();
+            boolean result = handleLongClick(v.getContext());
+
+            if (result && mHapticFeedback && mLongClickPattern != null) {
+                mVibrator.vibrate(mLongClickPattern, -1);
+            }
 
             if (result && mExternalLongClickListener != null) {
                 mExternalLongClickListener.onLongClick(v);
@@ -175,5 +199,9 @@ public abstract class PowerButton {
 
     void setExternalLongClickListener(View.OnLongClickListener listener) {
         mExternalLongClickListener = listener;
+    }
+
+    protected SharedPreferences getPreferences(Context context) {
+        return context.getSharedPreferences("PowerButton-" + mType, Context.MODE_PRIVATE);
     }
 }
