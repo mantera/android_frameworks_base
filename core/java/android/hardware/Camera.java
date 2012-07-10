@@ -1656,7 +1656,7 @@ public class Camera {
         private static final String KEY_SCENE_DETECT = "";
         private static final String KEY_FLASH_MODE = "flash-mode";
         private static final String KEY_FOCUS_MODE = "focus-mode";
-		private static final String KEY_ISO_MODE = "iso";
+        private static final String KEY_ISO_MODE = "iso";
         private static final String KEY_LENSSHADE = "lensshade";
         private static final String KEY_HISTOGRAM = "histogram";
         private static final String KEY_SKIN_TONE_ENHANCEMENT = "none";
@@ -1773,8 +1773,8 @@ public class Camera {
         public static final String ANTIBANDING_50HZ = "50hz";
         public static final String ANTIBANDING_60HZ = "60hz";
         public static final String ANTIBANDING_OFF = "off";
-        //Values for ISO settings
 
+        //Values for ISO settings
         /** @hide */
         public static final String ISO_AUTO = "auto";
         /** @hide */
@@ -3849,7 +3849,7 @@ public class Camera {
          * @hide
          * Gets the supported ISO values.
          *
-         * @return a List of FLASH_MODE_XXX string constants. null if flash mode
+         * @return a list of ISO_XXX string constants. null if ISO
          *         setting is not supported.
          */
         public List<String> getSupportedIsoValues() {
